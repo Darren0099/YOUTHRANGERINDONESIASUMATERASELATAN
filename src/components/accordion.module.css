@@ -1,0 +1,101 @@
+.list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.item {
+  border-radius: 24px;
+  background: #fff;
+  transition: box-shadow 0.3s;
+}
+
+.open {
+  box-shadow: 0 16px 40px -20px rgba(106, 56, 194, 0.5);
+}
+
+.q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.2rem 1.5rem;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.4vw, 1.2rem);
+  font-weight: 700;
+  text-align: left;
+}
+
+.icon {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--violet);
+  transition: background-color 0.3s, transform 0.4s var(--ease);
+}
+
+.icon::before,
+.icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 2px;
+  background: var(--purple);
+  transform: translate(-50%, -50%);
+  transition: transform 0.3s;
+}
+
+.icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.open .icon {
+  background: var(--purple);
+  transform: rotate(180deg);
+}
+
+.open .icon::before,
+.open .icon::after {
+  background: #fff;
+}
+
+.open .icon::after {
+  transform: translate(-50%, -50%) rotate(0);
+}
+
+.a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s var(--ease);
+}
+
+.open .a {
+  grid-template-rows: 1fr;
+}
+
+.a > div {
+  min-height: 0;
+  overflow: hidden;
+  padding-inline: 1.5rem;
+}
+
+.a p {
+  padding-bottom: 0.4rem;
+  color: var(--muted);
+}
+
+.a a {
+  display: inline-block;
+  margin-bottom: 1.2rem;
+  color: var(--purple);
+  font-weight: 700;
+}
+
+.a p:last-child {
+  padding-bottom: 1.2rem;
+}

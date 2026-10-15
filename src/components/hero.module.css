@@ -1,0 +1,251 @@
+.hero {
+  position: relative;
+  margin: 0 clamp(8px, 1.5vw, 20px);
+  padding-top: clamp(6.5rem, 12vw, 9rem);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: var(--ink);
+  color: #fff;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.glow span {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+}
+.g1 {
+  top: -10%;
+  right: -5%;
+  width: 46vw;
+  height: 46vw;
+  max-width: 640px;
+  max-height: 640px;
+  background: var(--purple);
+}
+.g2 {
+  bottom: 10%;
+  left: -8%;
+  width: 34vw;
+  height: 34vw;
+  max-width: 460px;
+  max-height: 460px;
+  background: var(--pink);
+  opacity: 0.35 !important;
+}
+.g3 {
+  top: 30%;
+  left: 35%;
+  width: 24vw;
+  height: 24vw;
+  max-width: 320px;
+  max-height: 320px;
+  background: var(--orange);
+  opacity: 0.25 !important;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.02fr 1fr;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  padding-bottom: clamp(2rem, 5vw, 4rem);
+}
+
+.badge {
+  display: inline-block;
+  margin-bottom: 1.4rem;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.copy h1 {
+  color: #fff;
+  font-size: clamp(2.5rem, 6.4vw, 5.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+.grad {
+  background: linear-gradient(90deg, var(--yellow), var(--orange) 50%, var(--pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lead {
+  max-width: 520px;
+  margin-top: 1.5rem;
+  color: #d8d0ea;
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+}
+
+.lead b {
+  color: var(--yellow);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 2rem;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 2rem;
+  margin-top: 2.2rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cfc4ea;
+  font-size: 0.9rem;
+}
+
+.facts strong {
+  display: block;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+
+/* ===== Kolase ===== */
+.collageWrap {
+  min-width: 0;
+}
+
+.collage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.98;
+}
+
+.blobA,
+.blobB {
+  position: absolute;
+}
+.blobA {
+  top: -8%;
+  right: -10%;
+  width: 70%;
+  color: var(--yellow);
+}
+.blobB {
+  bottom: -8%;
+  left: -10%;
+  width: 58%;
+  color: var(--pink);
+}
+
+.card {
+  position: absolute;
+  overflow: hidden;
+  border: 6px solid #fff;
+  border-radius: 28px;
+  background: var(--violet);
+  box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.7);
+}
+
+.card img {
+  object-fit: cover;
+}
+
+.cardA {
+  top: 6%;
+  left: 2%;
+  width: 82%;
+  aspect-ratio: 16 / 10;
+  transform: rotate(-3deg);
+}
+
+.cardB {
+  bottom: 4%;
+  left: 6%;
+  width: 36%;
+  aspect-ratio: 4 / 5;
+  transform: rotate(5deg);
+}
+
+.person {
+  position: absolute;
+  bottom: 0;
+  width: auto;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.45));
+}
+
+.p1 {
+  right: 22%;
+  height: 66%;
+  z-index: 2;
+}
+
+.p2 {
+  right: 2%;
+  height: 74%;
+  z-index: 3;
+}
+
+.sticker {
+  position: absolute;
+  z-index: 5;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: clamp(0.7rem, 1.4vw, 0.9rem);
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.5);
+  animation: floaty 5s ease-in-out infinite;
+}
+
+.s1 {
+  top: 2%;
+  left: 4%;
+  --r: -6deg;
+  background: #fff;
+  color: var(--ink);
+}
+.s2 {
+  top: 46%;
+  right: 0;
+  --r: 5deg;
+  background: var(--yellow);
+  color: var(--ink);
+  animation-delay: 0.8s;
+}
+.s3 {
+  bottom: 30%;
+  left: 0;
+  --r: -4deg;
+  background: var(--pink);
+  color: #fff;
+  animation-delay: 1.6s;
+}
+
+/* ===== Teks raksasa berjalan ===== */
+.band {
+  position: relative;
+  padding-block: clamp(0.6rem, 2vw, 1.4rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(90deg, #6a1b9a, var(--purple) 40%, var(--pink));
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .collage {
+    max-width: 520px;
+    margin-inline: auto;
+  }
+}
