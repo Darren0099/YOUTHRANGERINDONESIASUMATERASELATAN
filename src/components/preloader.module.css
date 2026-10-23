@@ -1,0 +1,51 @@
+.pre {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: var(--ink);
+  color: #fff;
+  transition: transform 0.9s var(--ease);
+}
+
+.out {
+  transform: translateY(-100%);
+}
+
+.count {
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 22vw, 12rem);
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(90deg, var(--yellow), var(--orange), var(--pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pre p {
+  padding-inline: 1rem;
+  text-align: center;
+  font-size: clamp(0.8rem, 2.4vw, 1rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.bar {
+  width: min(320px, 70vw);
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--yellow);
+}
