@@ -137,7 +137,7 @@ export async function writeArticles(update: (current: Article[]) => Article[], m
       const entries = [
         { path: `${dir()}${DATA_FILE}`, mode: "100644", type: "blob", content: json },
         ...images.map((img) => ({
-          path: `${dir()}${img.path.replace(/^\\//, "")}`,
+          path: `${dir()}${img.path.replace(/^\//, "")}`,
           mode: "100644",
           type: "blob",
           sha: img.sha,
