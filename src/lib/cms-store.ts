@@ -49,6 +49,7 @@ async function gh(pathname: string, init: RequestInit = {}) {
     headers: {
       Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
       Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
       "X-GitHub-Api-Version": "2022-11-28",
       "User-Agent": "yri-sumsel-cms",
       ...(init.headers ?? {}),
@@ -73,6 +74,16 @@ async function ghPut(file: string, content: Buffer, message: string, sha?: strin
   return res;
 }
 
+async function githubError(res: Response, action: string): Promise<Error> {
+  const data = (await res.json().catch(() => null)) as { message?: string } | null;
+  if (res.status === 401 || res.status === 403) {
+    return new Error(`${action} gagal (${res.status}). Periksa GITHUB_TOKEN dan izin Contents: Read and write di Vercel.`);
+  }
+  return new Error(`${action} gagal (${res.status}): ${data?.message || "Periksa log Vercel."}`);
+}
+
+export type StagedImage = { path: string; sha: string };
+
 /* ---------- API publik ---------- */
 
 export async function readArticles(): Promise<Article[]> {
@@ -85,7 +96,7 @@ export async function readArticles(): Promise<Article[]> {
   return Array.isArray(parsed) ? (parsed as Article[]) : [];
 }
 
-export async function writeArticles(update: (current: Article[]) => Article[], message: string): Promise<Article[]> {
+export async function writeArticles(update: (current: Article[]) => Article[], message: string, images: StagedImage[] = []): Promise<Article[]> {
   const mode = getMode();
   if (mode === "local") {
     const file = path.join(process.cwd(), DATA_FILE);
@@ -95,33 +106,96 @@ export async function writeArticles(update: (current: Article[]) => Article[], m
     return next;
   }
   if (mode === "github") {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let headSha = "";
+      let baseTreeSha = "";
+      if (images.length) {
+        const headRes = await gh(`git/ref/heads/${encodeURIComponent(branch())}`);
+        if (!headRes.ok) throw await githubError(headRes, "Membaca branch GitHub");
+        const head = (await headRes.json()) as { object?: { sha?: string } };
+        headSha = head.object?.sha ?? "";
+        if (!headSha) throw new Error("Commit terbaru GitHub tidak ditemukan.");
+        const commitRes = await gh(`git/commits/${headSha}`);
+        if (!commitRes.ok) throw await githubError(commitRes, "Membaca commit GitHub");
+        const commit = (await commitRes.json()) as { tree?: { sha?: string } };
+        baseTreeSha = commit.tree?.sha ?? "";
+        if (!baseTreeSha) throw new Error("Tree GitHub tidak ditemukan.");
+      }
+
       const existing = await ghGet(DATA_FILE);
       const current: Article[] = existing ? JSON.parse(existing.content || "[]") : [];
       const next = update(current);
-      const res = await ghPut(DATA_FILE, Buffer.from(JSON.stringify(next, null, 2) + "\n", "utf8"), message, existing?.sha);
-      if (res.ok) return next;
-      if (res.status !== 409 && res.status !== 422) throw new Error(`GitHub PUT gagal (${res.status})`);
+      const json = JSON.stringify(next, null, 2) + "\n";
+
+      if (!images.length) {
+        const res = await ghPut(DATA_FILE, Buffer.from(json, "utf8"), message, existing?.sha);
+        if (res.ok) return next;
+        if (res.status === 409 || res.status === 422) continue;
+        throw await githubError(res, "Menyimpan berita");
+      }
+
+      const entries = [
+        { path: `${dir()}${DATA_FILE}`, mode: "100644", type: "blob", content: json },
+        ...images.map((img) => ({
+          path: `${dir()}${img.path.replace(/^\\//, "")}`,
+          mode: "100644",
+          type: "blob",
+          sha: img.sha,
+        })),
+      ];
+      const treeRes = await gh("git/trees", {
+        method: "POST",
+        body: JSON.stringify({ base_tree: baseTreeSha, tree: entries }),
+      });
+      if (!treeRes.ok) throw await githubError(treeRes, "Menyiapkan foto dan berita");
+      const tree = (await treeRes.json()) as { sha?: string };
+      if (!tree.sha) throw new Error("Tree baru GitHub tidak ditemukan.");
+
+      const commitRes = await gh("git/commits", {
+        method: "POST",
+        body: JSON.stringify({ message, tree: tree.sha, parents: [headSha] }),
+      });
+      if (!commitRes.ok) throw await githubError(commitRes, "Membuat commit berita");
+      const newCommit = (await commitRes.json()) as { sha?: string };
+      if (!newCommit.sha) throw new Error("Commit baru GitHub tidak ditemukan.");
+
+      const updateRes = await gh(`git/refs/heads/${encodeURIComponent(branch())}`, {
+        method: "PATCH",
+        body: JSON.stringify({ sha: newCommit.sha, force: false }),
+      });
+      if (updateRes.ok) return next;
+      if (updateRes.status !== 409 && updateRes.status !== 422) {
+        throw await githubError(updateRes, "Memperbarui branch berita");
+      }
     }
-    throw new Error("Gagal menyimpan: terjadi bentrok perubahan, coba lagi.");
+    throw new Error("Penyimpanan bertabrakan dengan perubahan lain di GitHub. Coba terbitkan lagi.");
   }
   throw new Error("CMS belum dikonfigurasi");
 }
 
-/** Simpan gambar ke public/photos/uploads dan kembalikan path publiknya. */
-export async function saveImage(buffer: Buffer, filename: string): Promise<string> {
+/** Upload foto ke GitHub sebagai blob sementara tanpa membuat commit atau deployment. */
+export async function saveImage(buffer: Buffer, filename: string): Promise<{ path: string; sha?: string }> {
   const mode = getMode();
   const rel = `${UPLOAD_DIR}/${filename}`;
+  const publicPath = `/${rel}`;
+
   if (mode === "local") {
     const abs = path.join(process.cwd(), rel);
     await mkdir(path.dirname(abs), { recursive: true });
     await writeFile(abs, buffer);
-  } else if (mode === "github") {
-    // [skip ci]: agar unggah gambar tidak memicu build sendiri; build jalan saat data berita disimpan.
-    const res = await ghPut(rel, buffer, `CMS: unggah gambar ${filename} [skip ci]`);
-    if (!res.ok) throw new Error(`GitHub upload gagal (${res.status})`);
-  } else {
-    throw new Error("CMS belum dikonfigurasi");
+    return { path: publicPath };
   }
-  return `/photos/uploads/${filename}`;
+  if (mode === "github") {
+    const res = await gh("git/blobs", {
+      method: "POST",
+      body: JSON.stringify({ content: buffer.toString("base64"), encoding: "base64" }),
+    });
+    if (!res.ok) throw await githubError(res, "Mengunggah foto ke GitHub");
+    const data = (await res.json()) as { sha?: string };
+    if (!data.sha || !/^[0-9a-f]{40}$/i.test(data.sha)) {
+      throw new Error("GitHub tidak mengembalikan ID foto yang valid.");
+    }
+    return { path: publicPath, sha: data.sha };
+  }
+  throw new Error("CMS belum dikonfigurasi");
 }

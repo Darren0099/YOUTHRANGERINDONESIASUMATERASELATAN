@@ -12,33 +12,62 @@ interface Img {
   alt: string;
   /** URL lokal (blob) untuk pratinjau: gambar baru belum tersedia di server sebelum situs dibangun ulang. */
   preview?: string;
+  sha?: string;
 }
 
 /** Perkecil gambar di browser (maks. 1600 px, JPEG) agar muat batas unggah Vercel dan situs tetap ringan. */
-async function compress(file: File, maxW = 1600, quality = 0.82): Promise<Blob> {
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+async function compress(file: File, maxW = 1600): Promise<Blob> {
   const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, maxW / bmp.width);
-  const w = Math.round(bmp.width * scale);
-  const h = Math.round(bmp.height * scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Browser tidak mendukung pemrosesan gambar.");
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(bmp, 0, 0, w, h);
-  return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("Gagal memproses gambar."))), "image/jpeg", quality));
+  try {
+    let width = maxW;
+    let quality = 0.82;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const scale = Math.min(1, width / bmp.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bmp.width * scale));
+      canvas.height = Math.max(1, Math.round(bmp.height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Browser tidak mendukung pemrosesan gambar.");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (result) => result ? resolve(result) : reject(new Error("Gagal memproses gambar.")),
+          "image/jpeg",
+          quality,
+        );
+      });
+      if (blob.size <= MAX_UPLOAD_BYTES) return blob;
+      width = Math.round(width * 0.8);
+      quality = Math.max(0.5, quality - 0.08);
+    }
+    throw new Error("Foto terlalu besar. Coba pilih foto dengan resolusi lebih kecil.");
+  } finally {
+    bmp.close();
+  }
 }
 
-async function uploadImage(file: File): Promise<{ path: string; preview: string }> {
+async function uploadImage(file: File): Promise<{ path: string; preview: string; sha?: string }> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error("Format foto harus JPG, PNG, atau WebP.");
+  }
   const blob = await compress(file);
   const form = new FormData();
   form.append("file", blob, "foto.jpg");
-  const res = await fetch("/api/admin/upload", { method: "POST", body: form });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? "Gagal mengunggah gambar.");
-  return { path: json.path as string, preview: URL.createObjectURL(blob) };
+  let res: Response;
+  try {
+    res = await fetch("/api/admin/upload", { method: "POST", body: form });
+  } catch {
+    throw new Error("Koneksi terputus saat mengunggah foto. Periksa internet, lalu coba lagi.");
+  }
+  const json = (await res.json().catch(() => ({}))) as { path?: string; sha?: string; error?: string };
+  if (res.status === 413) throw new Error("Foto melebihi batas upload Vercel. Coba foto yang lebih kecil.");
+  if (!res.ok) throw new Error(json.error || `Gagal mengunggah foto (HTTP ${res.status}). Cek log Vercel.`);
+  if (!json.path) throw new Error("Server tidak mengembalikan lokasi foto.");
+  return { path: json.path, sha: json.sha, preview: URL.createObjectURL(blob) };
 }
 
 export default function ArticleForm({ categories, initial }: { categories: Category[]; initial?: Article }) {
@@ -75,9 +104,9 @@ export default function ArticleForm({ categories, initial }: { categories: Categ
     setUploading((n) => n + files.length);
     for (const file of Array.from(mode === "cover" ? [files[0]] : files)) {
       try {
-        const { path, preview } = await uploadImage(file);
-        if (mode === "cover") setCover({ path, preview, alt: cover?.alt ?? "" });
-        else setGallery((g) => [...g, { path, preview, alt: "" }]);
+        const { path, preview, sha } = await uploadImage(file);
+        if (mode === "cover") setCover({ path, preview, sha, alt: cover?.alt ?? "" });
+        else setGallery((g) => [...g, { path, preview, sha, alt: "" }]);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Gagal mengunggah gambar.");
       } finally {
@@ -108,16 +137,25 @@ export default function ArticleForm({ categories, initial }: { categories: Categ
       featured,
       popular,
     };
-    const res = await fetch("/api/admin/articles", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ article, originalSlug: initial?.slug }),
-    });
-    const json = await res.json().catch(() => ({}));
-    setSaving(false);
-    if (!res.ok) return setError(json.error ?? "Gagal menyimpan.");
-    router.push(`/admin?saved=${encodeURIComponent(json.slug)}`);
-    router.refresh();
+    const uploads = [cover, ...gallery]
+      .filter((img): img is Img & { sha: string } => Boolean(img?.sha))
+      .map(({ path, sha }) => ({ path, sha }));
+    try {
+      const res = await fetch("/api/admin/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ article, uploads, originalSlug: initial?.slug }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; slug?: string };
+      if (!res.ok) return setError(json.error ?? `Gagal menyimpan berita (HTTP ${res.status}).`);
+      if (!json.slug) return setError("Server tidak mengembalikan alamat berita.");
+      router.push(`/admin?saved=${encodeURIComponent(json.slug)}`);
+      router.refresh();
+    } catch {
+      setError("Koneksi terputus saat menyimpan berita. Periksa jaringan lalu coba lagi.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
