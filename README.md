@@ -1,86 +1,34 @@
-# Youth Ranger Indonesia Sumatera Selatan (YRI Sumsel)
+# Youth Ranger Indonesia Sumatera Selatan — Organization Website & News CMS
 
-Website profil organisasi **Youth Ranger Indonesia Sumatera Selatan**, dibangun ulang dari HTML/CSS/JS menjadi **Next.js (App Router) + React + TypeScript + CSS Modules**.
+Website profil **Youth Ranger Indonesia Sumatera Selatan** untuk menampilkan program, berita, dan dokumentasi kegiatan dalam pengalaman digital yang selaras dengan identitas komunitas. Dikembangkan ulang dari website HTML/CSS/JS menjadi aplikasi **Next.js App Router**.
 
-Tampilan tetap memakai identitas YRI (ungu, oranye/kuning, merah muda, font Telegraf dan Haffer, motif songket), dengan hero baru, halaman berita modern, dan animasi halus di semua halaman.
+## Kebutuhan proyek
 
-## Halaman
+Informasi komunitas sebelumnya tersebar pada halaman-halaman terpisah, sementara publikasi berita membutuhkan alur yang dapat dijalankan pengelola tanpa mengubah kode aplikasi setiap kali ada kegiatan baru.
 
-| Route | Isi | Pengganti file lama |
-| --- | --- | --- |
-| `/` | Landing page utama | `index.html` |
-| `/program` | Landing page kedua (program & kegiatan) | `YRI2/index.html` |
-| `/berita` | Semua berita, filter kategori, pencarian, populer, pengumuman, agenda | `News.html` |
-| `/berita/[slug]` | Detail satu berita, data dari `src/data/berita.ts` | `Berita/ajangsanamengajar/index.html` |
-| `/galeri` | Galeri foto dengan lightbox | `gallery.html` |
-| 404 | Halaman tidak ditemukan | `error.html` |
+## Solusi yang dibuat
 
-Daftar lengkap file lama dan padanannya ada di [`docs/PETA-FILE-LAMA-KE-BARU.md`](docs/PETA-FILE-LAMA-KE-BARU.md).
-
-## Fitur
-
-- **Hero baru** di landing (full-width): kolase foto, potret cutout, stiker, dan teks raksasa berjalan. Hero halaman Program memakai foto staff berbentuk kapsul berwarna.
-- **Preloader** singkat (sekali per sesi), animasi **fade in up** saat scroll di semua section, dan animasi masuk setiap halaman. Menghormati pengaturan "reduce motion".
-- **Berita modern**: sorotan utama, filter kategori, pencarian, kartu berita, dan kotak Populer/Pengumuman/Agenda.
-- **Detail berita**: progress membaca, info kegiatan, tombol bagikan, galeri dengan lightbox, dan berita terkait.
-- **Instagram**: 3 postingan terbaru (embed resmi) plus kartu akun `@youthranger.sumsel` dan event utama `@summitofstarsyri`.
-- **Responsif** untuk ponsel, tablet, dan desktop.
-
-## Panel admin berita (CMS)
-
-`/admin` memungkinkan menambah/mengubah/menghapus berita (judul, isi, foto sampul, galeri) tanpa edit kode. Data disimpan lewat commit otomatis ke GitHub sehingga cocok untuk Vercel. Tombol **Add News!** ada di halaman Berita. Panduan lengkap dan pengaturan variabel: [`docs/CMS-PANEL-ADMIN.md`](docs/CMS-PANEL-ADMIN.md).
-
-## Menjalankan
-
-Butuh Node.js 18.18 atau lebih baru (disarankan 20+).
-
-```bash
-npm install
-npm run dev      # http://localhost:3000
-npm run build    # build produksi
-npm start
-```
-
-## Mengubah konten (semua di `src/data/`)
-
-| File | Isi |
+| Halaman / sistem | Kemampuan |
 | --- | --- |
-| `site.ts` | Kontak, link, navigasi, **kode postingan Instagram**, mitra, FAQ |
-| `berita.ts` | Berita bawaan (satu objek = satu halaman), pengumuman, agenda. Berita dari panel admin ada di `berita.custom.json` |
-| `program.ts` | Program unggulan, benefit, statistik |
+| Beranda (`/`) | Identitas organisasi, pengantar, serta sorotan kegiatan |
+| Program (`/program`) | Informasi program dan aktivitas komunitas |
+| Berita (`/berita`) | Sorotan artikel, pencarian, filter kategori, pengumuman dan agenda |
+| Detail (`/berita/[slug]`) | Artikel, progres membaca, media pendukung dan tombol berbagi |
+| Galeri (`/galeri`) | Dokumentasi foto dengan lightbox |
+| Admin (`/admin`) | Pengelolaan berita: tambah, edit, hapus, serta unggah media |
 
-### Mengganti 3 postingan Instagram
-Buka link postingan, ambil kode di antara `/p/` dan `/`, lalu ganti di `instagramPosts` pada `src/data/site.ts`.
-Contoh: `https://www.instagram.com/p/DYFH1XliVMG/` menjadi `{ code: "DYFH1XliVMG" }`.
+### Pengelolaan artikel melalui GitHub
 
-### Menambah berita baru
-1. Taruh foto di `public/photos/`.
-2. Tambahkan satu objek di `articles` pada `src/data/berita.ts` (`slug`, `title`, `category`, `excerpt`, `cover`, `blocks`, dan opsional `gallery`, `info`, `date`, `author`).
-3. Halaman `/berita/<slug>` otomatis tersedia dan muncul di daftar berita.
+Aplikasi menyimpan konten berita tambahan dalam `src/data/berita.custom.json`. Aksi admin menggunakan route API untuk membuat perubahan pada repository melalui GitHub API. Metode ini membantu mengelola artikel tanpa database SQL tersendiri, tetapi memerlukan izin token yang tepat dan memperhatikan batasan commit/deployment.
 
-## Struktur
+## Teknologi yang diverifikasi
 
-```
-src/
-├─ app/                  Halaman (page.tsx) + CSS halaman
-│  ├─ page.tsx           Landing utama
-│  ├─ program/           Landing kedua
-│  ├─ berita/            Daftar berita
-│  │  └─ [slug]/         Detail berita
-│  ├─ galeri/
-│  ├─ layout.tsx, template.tsx, globals.css, not-found.tsx
-├─ components/           Navbar, Hero, HomeSections, Footer, Reveal (animasi), dll.
-├─ data/                 Data konten (site, berita, program)
-└─ fonts/                Telegraf & Haffer
-public/
-├─ photos/               Foto kegiatan
-├─ logos/                Logo YRI & mitra
-├─ cutouts/              Potret tanpa latar (staff)
-└─ img/                  Motif dekoratif
-```
+**Next.js 15, React 19, TypeScript, CSS Modules, GitHub API, dan Vercel.** Animasi, komponen galeri, dan antarmuka admin ditulis sebagai komponen proyek sendiri. **Tidak menggunakan Tailwind CSS** pada implementasi utama yang terdokumentasi.
 
-## Catatan
+## Hasil pengembangan
 
-- Foto sudah dikompres (maks. 1800 px) agar situs ringan.
-- Statistik di landing (500+ anak muda, 500+ pengikut, 10+ kerja sama, 10+ program) dibawa dari situs lama. Periksa dan perbarui di `src/data/program.ts` bila sudah berubah.
-- Embed Instagram memakai fitur resmi Instagram. Tampilan "live" otomatis tanpa mengganti kode tidak bisa dilakukan tanpa API/token Instagram atau layanan widget pihak ketiga.
+Terbentuk website organisasi dengan halaman informasi publik dan alur administrasi artikel. Hasil yang bisa dibuktikan adalah **modul, antarmuka, dan mekanisme pengelolaan konten** yang tercantum di repository, bukan angka kenaikan traffic atau pendaftaran relawan yang belum diukur.
+
+**Website:** https://youthrangerindonesiasumateraselatan.vercel.app/
+
+> Fitur admin berbasis GitHub memerlukan konfigurasi izin server yang sesuai agar penulisan artikel maupun foto dapat berfungsi pada deployment.
