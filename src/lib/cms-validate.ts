@@ -4,6 +4,11 @@ import { slugify } from "./blocks";
 const IMG = /^\/photos\/(?:uploads\/)?[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i;
 const clip = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
+/** Format lama dari upload sebelumnya masih diterima supaya draft yang terbuka tidak perlu diisi ulang. */
+export function normalizeImagePath(input: unknown): string {
+  return clip(input, 200).replace(/^\/public(?=\/photos\/uploads\/)/, "");
+}
+
 export type Result = { ok: true; article: Article } | { ok: false; error: string };
 
 function cleanBlocks(input: unknown): Block[] {
@@ -55,7 +60,7 @@ export function sanitizeArticle(input: unknown, existing: Article[], originalSlu
   const excerpt = clip(d.excerpt, 600);
   if (!excerpt) return { ok: false, error: "Ringkasan wajib diisi." };
 
-  const cover = clip(d.cover, 200);
+  const cover = normalizeImagePath(d.cover);
   if (!IMG.test(cover)) return { ok: false, error: "Foto sampul wajib diunggah." };
 
   const blocks = cleanBlocks(d.blocks);
@@ -64,7 +69,7 @@ export function sanitizeArticle(input: unknown, existing: Article[], originalSlu
   const gallery = Array.isArray(d.gallery)
     ? d.gallery
         .slice(0, 24)
-        .map((g) => ({ src: clip((g as { src?: string })?.src, 200), alt: clip((g as { alt?: string })?.alt, 200) }))
+        .map((g) => ({ src: normalizeImagePath((g as { src?: string })?.src), alt: clip((g as { alt?: string })?.alt, 200) }))
         .filter((g) => IMG.test(g.src))
         .map((g) => ({ src: g.src, alt: g.alt || title }))
     : [];

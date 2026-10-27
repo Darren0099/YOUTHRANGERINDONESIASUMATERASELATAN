@@ -137,7 +137,7 @@ export async function writeArticles(update: (current: Article[]) => Article[], m
       const entries = [
         { path: `${dir()}${DATA_FILE}`, mode: "100644", type: "blob", content: json },
         ...images.map((img) => ({
-          path: `${dir()}${img.path.replace(/^\//, "")}`,
+          path: `${dir()}public${img.path}`,
           mode: "100644",
           type: "blob",
           sha: img.sha,
@@ -177,7 +177,7 @@ export async function writeArticles(update: (current: Article[]) => Article[], m
 export async function saveImage(buffer: Buffer, filename: string): Promise<{ path: string; sha?: string }> {
   const mode = getMode();
   const rel = `${UPLOAD_DIR}/${filename}`;
-  const publicPath = `/${rel}`;
+  const publicPath = `/photos/uploads/${filename}`;
 
   if (mode === "local") {
     const abs = path.join(process.cwd(), rel);

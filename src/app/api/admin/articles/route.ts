@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { COOKIE_NAME, verifySession } from "@/lib/auth";
-import { sanitizeArticle } from "@/lib/cms-validate";
+import { normalizeImagePath, sanitizeArticle } from "@/lib/cms-validate";
 import { readArticles, writeArticles, type StagedImage } from "@/lib/cms-store";
 import { baseArticles, type Article } from "@/data/berita";
 
@@ -30,19 +30,20 @@ export async function POST(req: Request) {
     const used = new Set<string>();
     for (const file of files) {
       const data = file as { path?: unknown; sha?: unknown } | null;
+      const publicPath = normalizeImagePath(data?.path);
       if (
         !data ||
         typeof data.path !== "string" ||
         typeof data.sha !== "string" ||
-        !/^\/photos\/uploads\/[a-z0-9._-]+\.(jpg|jpeg|png|webp)$/i.test(data.path) ||
+        !/^\/photos\/uploads\/[a-z0-9._-]+\.(jpg|jpeg|png|webp)$/i.test(publicPath) ||
         !/^[0-9a-f]{40}$/i.test(data.sha) ||
-        !imagePaths.has(data.path) ||
-        used.has(data.path)
+        !imagePaths.has(publicPath) ||
+        used.has(publicPath)
       ) {
         return NextResponse.json({ error: "Data unggahan foto tidak valid. Pilih ulang fotonya." }, { status: 400 });
       }
-      uploads.push({ path: data.path, sha: data.sha });
-      used.add(data.path);
+      uploads.push({ path: publicPath, sha: data.sha });
+      used.add(publicPath);
     }
 
     const isUpdate = Boolean(originalSlug);
