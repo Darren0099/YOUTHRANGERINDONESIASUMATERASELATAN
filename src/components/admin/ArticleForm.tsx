@@ -70,7 +70,7 @@ async function uploadImage(file: File): Promise<{ path: string; preview: string;
   return { path: json.path, sha: json.sha, preview: URL.createObjectURL(blob) };
 }
 
-export default function ArticleForm({ categories, initial }: { categories: Category[]; initial?: Article }) {
+export default function ArticleForm({ categories, initial, lockSlug = false }: { categories: Category[]; initial?: Article; lockSlug?: boolean }) {
   const router = useRouter();
   const editing = Boolean(initial);
 
@@ -179,9 +179,11 @@ export default function ArticleForm({ categories, initial }: { categories: Categ
                     setSlug(slugify(e.target.value));
                   }}
                   required
+                  readOnly={lockSlug}
                   placeholder="otomatis dari judul"
                 />
               </div>
+              {lockSlug && <small>Alamat berita bawaan tidak dapat diubah agar link yang sudah dibagikan tetap aktif.</small>}
             </label>
             <div className={styles.two}>
               <label>
@@ -259,6 +261,10 @@ export default function ArticleForm({ categories, initial }: { categories: Categ
               <div className={styles.coverBox}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={cover.preview ?? cover.path} alt="" />
+                <label className={styles.replaceCover}>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => pick(e.target.files, "cover")} hidden />
+                  Ganti foto
+                </label>
                 <button type="button" className={styles.mini} onClick={() => setCover(null)} aria-label="Hapus foto sampul">
                   ✕
                 </button>

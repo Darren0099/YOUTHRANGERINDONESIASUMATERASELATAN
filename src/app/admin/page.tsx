@@ -14,6 +14,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const info = describeMode();
 
   let items: Awaited<ReturnType<typeof readArticles>> = [];
+  const baseSlugs = new Set(baseArticles.map((a) => a.slug));
   let loadError = "";
   if (info.mode !== "none") {
     try {
@@ -85,7 +86,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                     <Link href={`/admin/berita/${a.slug}/edit`} className={styles.ghost}>
                       Edit
                     </Link>
-                    <DeleteButton slug={a.slug} title={a.title} />
+                    <DeleteButton slug={a.slug} title={a.title} restoreDefault={baseSlugs.has(a.slug)} />
                   </span>
                 </li>
               ))}
@@ -95,14 +96,18 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <section>
           <h2>Berita bawaan ({baseArticles.length})</h2>
-          <p className={styles.muted}>Ditulis di kode (src/data/berita.ts), jadi diubah lewat kode, bukan panel ini.</p>
+          <p className={styles.muted}>Berita bawaan sekarang bisa diedit. Perubahan tersimpan di GitHub dan versi aslinya tetap aman.</p>
           <ul className={styles.compact}>
-            {baseArticles.map((a) => (
-              <li key={a.slug}>
-                <Link href={`/berita/${a.slug}`}>{a.title}</Link>
-                <small>{a.category}</small>
-              </li>
-            ))}
+            {baseArticles.map((a) => {
+              const updated = items.find((item) => item.slug === a.slug);
+              return (
+                <li key={a.slug}>
+                  <Link href={`/berita/${a.slug}`}>{updated?.title ?? a.title}</Link>
+                  <small>{updated ? "Sudah diedit" : a.category}</small>
+                  <Link href={`/admin/berita/${a.slug}/edit`} className={styles.ghost}>Edit</Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
       </main>

@@ -250,7 +250,9 @@
 .compact li {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
   padding: 0.6rem 1rem;
   border-radius: 12px;
   background: #fff;
@@ -491,6 +493,19 @@
   top: 0.6rem;
   right: 0.6rem;
   background: #fff;
+}
+
+.replaceCover {
+  position: absolute;
+  left: 0.7rem;
+  bottom: 0.7rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--purple);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .drop {

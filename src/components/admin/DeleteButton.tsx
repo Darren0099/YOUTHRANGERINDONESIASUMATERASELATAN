@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import styles from "./admin.module.css";
 
-export default function DeleteButton({ slug, title }: { slug: string; title: string }) {
+export default function DeleteButton({ slug, title, restoreDefault = false }: { slug: string; title: string; restoreDefault?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -14,7 +14,10 @@ export default function DeleteButton({ slug, title }: { slug: string; title: str
       className={styles.danger}
       disabled={busy}
       onClick={async () => {
-        if (!confirm(`Hapus berita "${title}"?\n\nTindakan ini tidak bisa dibatalkan.`)) return;
+        const message = restoreDefault
+          ? `Kembalikan berita "${title}" ke versi bawaan? Perubahan dari panel akan hilang.`
+          : `Hapus berita "${title}"?\n\nTindakan ini tidak bisa dibatalkan.`;
+        if (!confirm(message)) return;
         setBusy(true);
         const res = await fetch(`/api/admin/articles?slug=${encodeURIComponent(slug)}`, { method: "DELETE" });
         setBusy(false);
@@ -22,7 +25,7 @@ export default function DeleteButton({ slug, title }: { slug: string; title: str
         else alert((await res.json().catch(() => ({}))).error ?? "Gagal menghapus.");
       }}
     >
-      {busy ? "Menghapus…" : "Hapus"}
+      {busy ? "Memproses…" : restoreDefault ? "Kembalikan" : "Hapus"}
     </button>
   );
 }

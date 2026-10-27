@@ -1,7 +1,7 @@
 import { baseArticles, categories, type Article, type Block, type Category } from "@/data/berita";
 import { slugify } from "./blocks";
 
-const IMG = /^\/photos\/uploads\/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/;
+const IMG = /^\/photos\/(?:uploads\/)?[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i;
 const clip = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 export type Result = { ok: true; article: Article } | { ok: false; error: string };
@@ -39,7 +39,14 @@ export function sanitizeArticle(input: unknown, existing: Article[], originalSlu
 
   const slug = slugify(clip(d.slug, 120) || title);
   if (!slug) return { ok: false, error: "Slug tidak valid." };
-  const taken = new Set([...baseArticles.map((a) => a.slug), ...existing.filter((a) => a.slug !== originalSlug).map((a) => a.slug)]);
+  const isBaseArticle = baseArticles.some((a) => a.slug === originalSlug);
+  if (isBaseArticle && slug !== originalSlug) {
+    return { ok: false, error: "Alamat berita bawaan tidak bisa diubah supaya tautan lama tetap berfungsi." };
+  }
+  const taken = new Set([
+    ...baseArticles.filter((a) => a.slug !== originalSlug).map((a) => a.slug),
+    ...existing.filter((a) => a.slug !== originalSlug).map((a) => a.slug),
+  ]);
   if (taken.has(slug)) return { ok: false, error: `Slug "${slug}" sudah dipakai berita lain. Ganti slug-nya.` };
 
   const category = clip(d.category, 30) as Category;

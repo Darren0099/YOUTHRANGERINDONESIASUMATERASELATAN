@@ -311,7 +311,8 @@ export const baseArticles: Article[] = [
  */
 export const customArticles = customData as unknown as Article[];
 
-export const articles: Article[] = [...customArticles, ...baseArticles];
+const customSlugs = new Set(customArticles.map((a) => a.slug));
+export const articles: Article[] = [...customArticles, ...baseArticles.filter((a) => !customSlugs.has(a.slug))];
 
 export const announcements = [
   { title: "Pendaftaran Mentoring Skill: Analisis Masalah dengan 5 Ways!", text: "Batas akhir: 11 April 2025" },

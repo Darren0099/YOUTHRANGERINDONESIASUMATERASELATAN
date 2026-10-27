@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { COOKIE_NAME, verifySession } from "@/lib/auth";
 import { sanitizeArticle } from "@/lib/cms-validate";
 import { readArticles, writeArticles, type StagedImage } from "@/lib/cms-store";
-import type { Article } from "@/data/berita";
+import { baseArticles, type Article } from "@/data/berita";
 
 async function guard() {
   return verifySession((await cookies()).get(COOKIE_NAME)?.value);
@@ -15,7 +15,11 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { article?: unknown; originalSlug?: string; uploads?: unknown };
     const current = await readArticles();
-    const result = sanitizeArticle(body.article, current, body.originalSlug);
+    const originalSlug = typeof body.originalSlug === "string" ? body.originalSlug : undefined;
+    if (originalSlug && !current.some((a) => a.slug === originalSlug) && !baseArticles.some((a) => a.slug === originalSlug)) {
+      return NextResponse.json({ error: "Berita yang diedit tidak ditemukan." }, { status: 404 });
+    }
+    const result = sanitizeArticle(body.article, current, originalSlug);
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
     const art = result.article;
@@ -41,14 +45,15 @@ export async function POST(req: Request) {
       used.add(data.path);
     }
 
-    const isUpdate = Boolean(body.originalSlug) && current.some((a) => a.slug === body.originalSlug);
-    if (body.originalSlug && !isUpdate) return NextResponse.json({ error: "Berita yang diedit tidak ditemukan." }, { status: 404 });
+    const isUpdate = Boolean(originalSlug);
 
     await writeArticles(
       (list: Article[]) => {
         // "Sorotan" hanya boleh satu: hapus tanda dari berita lain
         const base = art.featured ? list.map((a) => ({ ...a, featured: undefined })) : list;
-        if (isUpdate) return base.map((a) => (a.slug === body.originalSlug ? art : a));
+        if (isUpdate && base.some((a) => a.slug === originalSlug)) {
+          return base.map((a) => (a.slug === originalSlug ? art : a));
+        }
         return [art, ...base];
       },
       `CMS: ${isUpdate ? "ubah" : "tambah"} berita "${art.title.slice(0, 60)}"`,
