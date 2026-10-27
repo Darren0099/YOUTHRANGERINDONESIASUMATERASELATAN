@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "slug": "aaaaa",
+    "title": "aaaaa",
+    "category": "Akademik",
+    "excerpt": "aaaa",
+    "cover": "/photos/uploads/mvqh9fqw-3fe467.jpg",
+    "coverAlt": "aaaaa",
+    "blocks": [
+      {
+        "type": "p",
+        "text": "aaaa"
+      }
+    ],
+    "author": "aaa",
+    "gallery": [
+      {
+        "src": "/photos/uploads/mvqh9ifw-e3fe69.jpg",
+        "alt": "aaaaa"
+      }
+    ]
+  }
+]
